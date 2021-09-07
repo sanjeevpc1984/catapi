@@ -72,7 +72,7 @@ def init_event_consumer() -> EventConsumer:
 
 def include_routers(app: FastAPI) -> None:
     app.include_router(status_view.router)
-    app.include_router(cat_view.router, prefix="/v1")
+    app.include_router(cat_view.router, prefix="/v1", tags=["cats"])
 
 
 def add_exception_handlers(app: FastAPI) -> None:
