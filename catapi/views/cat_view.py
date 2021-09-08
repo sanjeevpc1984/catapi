@@ -84,6 +84,17 @@ async def list_cats(
 @router.delete(
     "/cat/{cat_id}",
     response_model=dto.EntityDeleteResponse,
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "model": dto.ErrorResponse,
+            "description": "Cat not found.",
+        },
+        status.HTTP_409_CONFLICT: {
+            "model": dto.ErrorResponse,
+            "description": "Cat with invalid id.",
+        },
+    },
+    response_model_exclude_unset=True,
 )
 async def delete_cat(
     cat_id: dto.CatID = Path(..., title="Cat ID", description="The ID of the Cat to get.")
@@ -95,4 +106,4 @@ async def delete_cat(
     :return: The message and exception of the success and failure
     """
     await cat_domain.delete_cat(cat_id=cat_id)
-    return dto.EntityDeleteResponse(message="Cat deleted ")
+    return dto.EntityDeleteResponse(message="Cat deleted")

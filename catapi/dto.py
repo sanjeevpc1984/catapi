@@ -124,3 +124,7 @@ class ListResponse(GenericModel, Generic[ResponseT]):
 
 class EntityDeleteResponse(BaseModel):
     message: str
+
+
+class ErrorResponse(BaseModel):
+    errors: str

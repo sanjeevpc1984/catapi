@@ -31,7 +31,7 @@ async def find_many(
 
 
 async def delete_cat(cat_id: dto.CatID) -> bool:
-    deleted = await cat_model.delete_cat(cat_id)
+    deleted = await cat_model.delete_cat(cat_id=cat_id)
     if not deleted:
         raise exceptions.CatNotFoundError(f"Cat {cat_id} does not exist.")
     return deleted
