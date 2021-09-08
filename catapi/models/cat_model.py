@@ -169,3 +169,9 @@ def cat_summary_from_bson(cat: BSONDocument) -> dto.CatSummary:
         id=bson_id_to_cat_id(cat["_id"]),
         **cat,
     )
+
+
+async def delete_cat(cat_id: dto.CatID) -> bool:
+    collection = get_collection(_COLLECTION_NAME)
+    result = await collection.delete_one({"_id": ObjectId(cat_id)})
+    return result.deleted_count == 1

@@ -120,3 +120,7 @@ class StatusViewResponse(BaseModel):
 class ListResponse(GenericModel, Generic[ResponseT]):
     results: List[ResponseT]
     metadata: PageMetadata
+
+
+class EntityDeleteResponse(BaseModel):
+    message: str
