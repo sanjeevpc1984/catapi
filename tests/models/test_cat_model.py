@@ -6,7 +6,7 @@ import pytest
 from bson import ObjectId
 
 from catapi import dto
-from catapi.exceptions import DuplicateCatError
+from catapi.exceptions import DuplicateCatError, InvalidCatError
 from catapi.models import cat_model
 from catapi.models.common import BSONDocument, get_collection
 from tests import conftest
@@ -333,3 +333,14 @@ async def test_delete_cat_successful(existing_cat_documents: List[BSONDocument])
     )
 
     assert found_cat is None
+
+
+@conftest.async_test
+async def test_delete_cat_invalid(existing_cat_documents: List[BSONDocument]) -> None:
+    collection = await get_collection(cat_model._COLLECTION_NAME)
+    await collection.insert_many(existing_cat_documents)
+    cat_id = dto.CatID("00000000000000000000010")
+
+    with pytest.raises(InvalidCatError) as invalid_cat_error:
+        await cat_model.delete_cat(cat_id)
+    assert str(invalid_cat_error.value) == ("Cat with invalid id 00000000000000000000010.")

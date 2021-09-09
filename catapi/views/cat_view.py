@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from catapi import dto, serializers
 from catapi.domains import cat_domain
+from catapi.exceptions import InvalidCatError
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -89,7 +90,7 @@ async def list_cats(
             "model": dto.ErrorResponse,
             "description": "Cat not found.",
         },
-        status.HTTP_409_CONFLICT: {
+        status.HTTP_412_PRECONDITION_FAILED: {
             "model": dto.ErrorResponse,
             "description": "Cat with invalid id.",
         },
@@ -105,5 +106,10 @@ async def delete_cat(
 
     :return: The message and exception of the success and failure
     """
-    await cat_domain.delete_cat(cat_id=cat_id)
+    try:
+        await cat_domain.delete_cat(cat_id=cat_id)
+    except (InvalidCatError) as ex:
+        raise HTTPException(
+            status_code=status.HTTP_412_PRECONDITION_FAILED, detail=str(ex)
+        ) from ex
     return dto.EntityDeleteResponse(message="Cat deleted")
