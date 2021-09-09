@@ -82,7 +82,7 @@ async def list_cats(
 
 
 @router.delete(
-    "/cat/{cat_id}",
+    "/cats/{cat_id}",
     response_model=dto.EntityDeleteResponse,
     responses={
         status.HTTP_404_NOT_FOUND: {

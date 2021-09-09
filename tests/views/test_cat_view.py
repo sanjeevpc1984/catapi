@@ -1,11 +1,12 @@
 from datetime import datetime, timezone
+from http import HTTPStatus
 from typing import Optional
 from unittest import mock
 
 import pytest
 from starlette.testclient import TestClient
 
-from catapi import dto
+from catapi import dto, exceptions
 from catapi.main import app
 
 client = TestClient(app)
@@ -202,3 +203,31 @@ def test_list_cats(
         cat_sort_params=expected_cat_sort_params,
         page=expected_page,
     )
+
+
+@mock.patch("catapi.domains.cat_domain.delete_cat")
+def test_delete_cat(mock_cat_domain_delete_cat: mock.Mock) -> None:
+    cat_id = dto.CatID("000000000000000000000101")
+    mock_cat_domain_delete_cat.return_value = True
+
+    response = client.delete(f"/v1/cats/{cat_id}")
+
+    assert response.status_code == HTTPStatus.OK
+
+    mock_cat_domain_delete_cat.assert_called_once_with(cat_id=cat_id)
+
+
+@mock.patch("catapi.domains.cat_domain.delete_cat")
+def test_delete_cat_not_found(mock_cat_domain_delete_cat: mock.Mock) -> None:
+    cat_id = dto.CatID("000000000000000000000101")
+    mock_cat_domain_delete_cat.side_effect = exceptions.CatNotFoundError(
+        f"Cat {cat_id} does not exist."
+    )
+
+    response = client.delete(f"/v1/cats/{cat_id}")
+
+    assert (response.status_code, response.json()) == (
+        404,
+        {"errors": f"Cat {cat_id} does not exist."},
+    )
+    mock_cat_domain_delete_cat.assert_called_once_with(cat_id=cat_id)
