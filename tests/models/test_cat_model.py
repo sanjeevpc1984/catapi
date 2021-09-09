@@ -325,7 +325,7 @@ async def test_delete_cat_successful(existing_cat_documents: List[BSONDocument])
     deleted = await cat_model.delete_cat(cat_id=dto.CatID("000000000000000000000101"))
 
     assert deleted is True
-
+    # assert it was actually deleted from db
     found_cat = await cat_model.find_one(
         cat_filter=dto.CatFilter(
             cat_id=dto.CatID("000000000000000000000101"),
