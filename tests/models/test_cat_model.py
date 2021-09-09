@@ -321,18 +321,30 @@ async def test_find_many(
 async def test_delete_cat_successful(existing_cat_documents: List[BSONDocument]) -> None:
     collection = await get_collection(cat_model._COLLECTION_NAME)
     await collection.insert_many(existing_cat_documents)
-
-    deleted = await cat_model.delete_cat(cat_id=dto.CatID("000000000000000000000101"))
+    cat_id = dto.CatID("000000000000000000000101")
+    deleted = await cat_model.delete_cat(cat_id=cat_id)
 
     assert deleted is True
     # assert it was actually deleted from db
     found_cat = await cat_model.find_one(
         cat_filter=dto.CatFilter(
-            cat_id=dto.CatID("000000000000000000000101"),
+            cat_id=cat_id,
         )
     )
 
     assert found_cat is None
+
+
+@conftest.async_test
+async def test_delete_cat_not_found(existing_cat_documents: List[BSONDocument]) -> None:
+    collection = await get_collection(cat_model._COLLECTION_NAME)
+    await collection.insert_many(existing_cat_documents)
+
+    cat_id = dto.CatID("000000000000000000000000")
+
+    deleted = await cat_model.delete_cat(cat_id=cat_id)
+
+    assert deleted is False
 
 
 @conftest.async_test
