@@ -22,6 +22,24 @@ async def remove_cats() -> None:
     await cats.delete_many({})
 
 
+@pytest.fixture
+def existing_cat_documents() -> List[BSONDocument]:
+    return [
+        {
+            "_id": ObjectId("000000000000000000000101"),
+            "name": "Sammybridge Cat",
+            "ctime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+            "mtime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+        },
+        {
+            "_id": ObjectId("000000000000000000000102"),
+            "name": "Shirasu Sleep Industries Cat",
+            "ctime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+            "mtime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+        },
+    ]
+
+
 @pytest.mark.parametrize(
     "unsaved_cat, expected_cat, expected_document",
     [
@@ -297,3 +315,21 @@ async def test_find_many(
     )
 
     assert found_cat_summaries == expected_cat_summaries
+
+
+@conftest.async_test
+async def test_delete_cat_successful(existing_cat_documents: List[BSONDocument]) -> None:
+    collection = await get_collection(cat_model._COLLECTION_NAME)
+    await collection.insert_many(existing_cat_documents)
+
+    deleted = await cat_model.delete_cat(cat_id=dto.CatID("000000000000000000000101"))
+
+    assert deleted is True
+
+    found_cat = await cat_model.find_one(
+        cat_filter=dto.CatFilter(
+            cat_id=dto.CatID("000000000000000000000101"),
+        )
+    )
+
+    assert found_cat is None
