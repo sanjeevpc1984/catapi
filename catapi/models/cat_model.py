@@ -8,7 +8,7 @@ import pymongo.errors
 from bson import ObjectId
 
 from catapi import config, dto
-from catapi.exceptions import DuplicateCatError, EmptyResultsFilter
+from catapi.exceptions import DuplicateCatError, EmptyResultsFilter, InvalidCatError
 from catapi.models.common import (
     BSONDocument,
     _calculate_db_skip_value,
@@ -176,5 +176,5 @@ async def delete_cat(cat_id: dto.CatID) -> bool:
     try:
         result = await collection.delete_one({"_id": ObjectId(cat_id)})
     except pymongo.errors.InvalidId:
-        raise DuplicateCatError(f"Cat with invalid id {cat_id}.")
+        raise InvalidCatError(f"Cat with invalid id {cat_id}.")
     return result.deleted_count == 1
