@@ -212,7 +212,7 @@ def test_delete_cat(mock_cat_domain_delete_cat: mock.Mock) -> None:
 
     response = client.delete(f"/v1/cats/{cat_id}")
 
-    assert response.status_code == HTTPStatus.OK
+    assert response.status_code == HTTPStatus.NO_CONTENT
 
     mock_cat_domain_delete_cat.assert_called_once_with(cat_id=cat_id)
 

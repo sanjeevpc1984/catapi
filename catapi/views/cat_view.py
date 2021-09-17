@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Response, status
 
 from catapi import dto, serializers
 from catapi.domains import cat_domain
@@ -84,7 +84,7 @@ async def list_cats(
 
 @router.delete(
     "/cats/{cat_id}",
-    response_model=dto.EntityDeleteResponse,
+    status_code=status.HTTP_204_NO_CONTENT,
     responses={
         status.HTTP_404_NOT_FOUND: {
             "model": dto.ErrorResponse,
@@ -99,7 +99,7 @@ async def list_cats(
 )
 async def delete_cat(
     cat_id: dto.CatID = Path(..., title="Cat ID", description="The ID of the Cat to get.")
-) -> dto.EntityDeleteResponse:
+) -> Response:
     """
     Delete view for Cat
     \f
@@ -112,4 +112,4 @@ async def delete_cat(
         raise HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED, detail=str(ex)
         ) from ex
-    return dto.EntityDeleteResponse(message="Cat deleted")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
