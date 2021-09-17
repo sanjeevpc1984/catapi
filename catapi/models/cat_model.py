@@ -178,3 +178,9 @@ async def delete_cat(cat_id: dto.CatID) -> bool:
     except pymongo.errors.InvalidId:
         raise InvalidCatError(f"Cat with invalid id {cat_id}.")
     return result.deleted_count == 1
+
+
+async def partial_update_cat(
+    cat_filter: dto.CatFilter, partial_update: dto.PartialUpdateCat
+) -> Optional[dto.Cat]:
+    pass

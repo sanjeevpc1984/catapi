@@ -1,9 +1,10 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path, Response, status
 
 from catapi import dto, serializers
 from catapi.domains import cat_domain
+from catapi.events import cat_events
 from catapi.exceptions import InvalidCatError
 
 router = APIRouter()
@@ -15,7 +16,10 @@ logger = logging.getLogger(__name__)
     response_model=dto.Cat,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_cat(unsaved_cat: dto.UnsavedCat) -> dto.JSON:
+async def create_cat(
+    unsaved_cat: dto.UnsavedCat,
+    background_tasks: BackgroundTasks,
+) -> dto.JSON:
     """
     Create view for creating a new Cat given an UnsavedCat payload.
 
@@ -23,6 +27,7 @@ async def create_cat(unsaved_cat: dto.UnsavedCat) -> dto.JSON:
     :return:
     """
     cat = await cat_domain.create_cat(unsaved_cat)
+    background_tasks.add_task(cat_events.fire_cat_created, cat_id=cat.dict().get("id"))
     return cat.dict()
 
 
