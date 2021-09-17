@@ -7,6 +7,7 @@ import pytest
 from starlette.testclient import TestClient
 
 from catapi import dto, exceptions
+from catapi.events import cat_events
 from catapi.main import app
 
 client = TestClient(app)
@@ -39,9 +40,11 @@ UTC = timezone.utc
         ),
     ],
 )
+@mock.patch("fastapi.background.BackgroundTasks.add_task")
 @mock.patch("catapi.domains.cat_domain.create_cat")
 def test_create_cat_success(
     mock_cat_domain_create_cat: mock.Mock,
+    mock_background_tasks_add_task: mock.Mock,
     json_request_body: dto.JSON,
     expected_unsaved_cat: dto.Cat,
     expected_cat: dto.Cat,
@@ -53,6 +56,9 @@ def test_create_cat_success(
 
     assert (response.status_code, response.json()) == (201, expected_response)
     mock_cat_domain_create_cat.assert_called_once_with(expected_unsaved_cat)
+    mock_background_tasks_add_task.assert_called_once_with(
+        cat_events.fire_cat_created, cat_id="000000000000000000000101"
+    )
 
 
 @pytest.mark.parametrize(
