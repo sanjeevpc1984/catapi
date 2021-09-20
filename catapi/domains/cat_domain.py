@@ -13,7 +13,7 @@ async def create_cat(new_cat: dto.UnsavedCat) -> dto.Cat:
     return await cat_model.create_cat(new_cat, now=now)
 
 
-async def find_one(cat_filter: dto.CatFilter) -> Optional[dto.Cat]:
+async def find_one(cat_filter: dto.CatFilter) -> Optional[dto.CatOut]:
     return await cat_model.find_one(cat_filter=cat_filter)
 
 
@@ -39,6 +39,6 @@ async def delete_cat(cat_id: dto.CatID) -> bool:
 
 async def partial_update_cat(
     cat_filter: dto.CatFilter, partial_update: dto.PartialUpdateCat
-) -> Optional[dto.Cat]:
+) -> Optional[dto.CatOut]:
     cat = await cat_model.partial_update_cat(cat_filter, partial_update)
     return cat

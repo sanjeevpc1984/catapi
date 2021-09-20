@@ -89,13 +89,23 @@ class Cat(BaseModel):
     mtime: datetime
 
 
+class CatOut(BaseModel):
+    id: CatID
+    name: str
+    ctime: datetime
+    mtime: datetime
+    url: Optional[str] = None
+
+
 class CatSummary(BaseModel):
     id: CatID
     name: str
+    url: Optional[str] = None
 
 
 class PartialUpdateCat(BaseModel):
-    name: Optional[str]
+    name: Optional[str] = None
+    url: Optional[str] = None
 
 
 class CatFilter(BaseModel):

@@ -133,22 +133,25 @@ async def test_create_cat_duplicate_name(
                     "name": "Sammybridge Cat",
                     "ctime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
                     "mtime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+                    "url": "https://placekitten.com/250/350",
                 },
                 {
                     "_id": ObjectId("000000000000000000000102"),
                     "name": "Shirasu Sleep Industries Cat",
                     "ctime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
                     "mtime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+                    "url": "https://placekitten.com/200/300",
                 },
             ],
             dto.CatFilter(
                 cat_id=dto.CatID("000000000000000000000101"),
             ),
-            dto.Cat(
+            dto.CatOut(
                 id=dto.CatID("000000000000000000000101"),
                 name="Sammybridge Cat",
                 ctime=datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
                 mtime=datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+                url="https://placekitten.com/250/350",
             ),
         ),
         (
@@ -158,6 +161,7 @@ async def test_create_cat_duplicate_name(
                     "name": "Sammybridge Cat",
                     "ctime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
                     "mtime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+                    "url": "https://placekitten.com/250/350",
                 },
                 {
                     "_id": ObjectId("000000000000000000000102"),
@@ -167,11 +171,12 @@ async def test_create_cat_duplicate_name(
                 },
             ],
             dto.CatFilter(name="Sammybridge Cat"),
-            dto.Cat(
+            dto.CatOut(
                 id=dto.CatID("000000000000000000000101"),
                 name="Sammybridge Cat",
                 ctime=datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
                 mtime=datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+                url="https://placekitten.com/250/350",
             ),
         ),
         (
@@ -187,6 +192,7 @@ async def test_create_cat_duplicate_name(
                     "name": "Shirasu Sleep Industries Cat",
                     "ctime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
                     "mtime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+                    "url": "https://placekitten.com/200/300",
                 },
             ],
             dto.CatFilter(
@@ -200,7 +206,7 @@ async def test_create_cat_duplicate_name(
 async def test_find_one(
     existing_cat_documents: List[BSONDocument],
     cat_filter: dto.CatFilter,
-    expected_cat: Optional[dto.Cat],
+    expected_cat: Optional[dto.CatOut],
 ) -> None:
     collection = await get_collection(cat_model._COLLECTION_NAME)
     await collection.insert_many(existing_cat_documents)

@@ -147,20 +147,27 @@ def test_get_cat_not_found(
                     dto.CatSummary(
                         id=dto.CatID("000000000000000000000101"),
                         name="Sammybridge Cat",
+                        url="https://placekitten.com/250/350",
                     ),
                     dto.CatSummary(
                         id=dto.CatID("000000000000000000000102"),
                         name="Shirasu Sleep Industries Cat",
+                        url="https://placekitten.com/200/300",
                     ),
                 ],
                 metadata=dto.PageMetadata(has_next_page=False),
             ),
             {
                 "results": [
-                    {"id": "000000000000000000000101", "name": "Sammybridge Cat"},
+                    {
+                        "id": "000000000000000000000101",
+                        "name": "Sammybridge Cat",
+                        "url": "https://placekitten.com/250/350",
+                    },
                     {
                         "id": "000000000000000000000102",
                         "name": "Shirasu Sleep Industries Cat",
+                        "url": "https://placekitten.com/200/300",
                     },
                 ],
                 "metadata": {"has_next_page": False},
@@ -176,13 +183,18 @@ def test_get_cat_not_found(
                     dto.CatSummary(
                         id=dto.CatID("000000000000000000000101"),
                         name="Sammybridge Cat",
+                        url="https://placekitten.com/250/350",
                     ),
                 ],
                 metadata=dto.PageMetadata(has_next_page=False),
             ),
             {
                 "results": [
-                    {"id": "000000000000000000000101", "name": "Sammybridge Cat"},
+                    {
+                        "id": "000000000000000000000101",
+                        "name": "Sammybridge Cat",
+                        "url": "https://placekitten.com/250/350",
+                    },
                 ],
                 "metadata": {"has_next_page": False},
             },

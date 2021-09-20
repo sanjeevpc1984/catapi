@@ -31,7 +31,7 @@ async def create_cat(
     return cat.dict()
 
 
-@router.get("/cats/{cat_id}", response_model=dto.Cat, response_model_exclude_unset=True)
+@router.get("/cats/{cat_id}", response_model=dto.CatOut, response_model_exclude_unset=True)
 async def get_cat(
     cat_id: dto.CatID = Path(..., title="Cat ID", description="The ID of the Cat to get."),
     scope: dto.Scope = Depends(serializers.scope_from_query_param),

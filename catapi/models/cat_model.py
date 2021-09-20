@@ -6,6 +6,7 @@ import bson.errors
 import pymongo
 import pymongo.errors
 from bson import ObjectId
+from pymongo import ReturnDocument
 
 from catapi import config, dto
 from catapi.exceptions import DuplicateCatError, EmptyResultsFilter, InvalidCatError
@@ -17,10 +18,7 @@ from catapi.models.common import (
 )
 
 _COLLECTION_NAME = "cats"
-_CAT_SUMMARY_PROJECTION = {
-    "_id": 1,
-    "name": 1,
-}
+_CAT_SUMMARY_PROJECTION = {"_id": 1, "name": 1, "url": 1}
 
 
 logger = logging.getLogger(__name__)
@@ -41,7 +39,7 @@ async def create_cat(new_cat: dto.UnsavedCat, now: datetime) -> dto.Cat:
     )
 
 
-async def find_one(cat_filter: dto.CatFilter) -> Optional[dto.Cat]:
+async def find_one(cat_filter: dto.CatFilter) -> Optional[dto.CatOut]:
     try:
         match = cat_filter_to_db_match(cat_filter)
     except EmptyResultsFilter:
@@ -129,12 +127,13 @@ def unsaved_cat_to_bson(new_cat: dto.UnsavedCat, now: datetime) -> BSONDocument:
     }
 
 
-def cat_from_bson(cat: BSONDocument) -> dto.Cat:
-    return dto.Cat(
+def cat_from_bson(cat: BSONDocument) -> dto.CatOut:
+    return dto.CatOut(
         id=bson_id_to_cat_id(cat["_id"]),
         name=cat["name"],
         ctime=cat["ctime"],
         mtime=cat["mtime"],
+        url=cat["url"],
     )
 
 
@@ -182,5 +181,19 @@ async def delete_cat(cat_id: dto.CatID) -> bool:
 
 async def partial_update_cat(
     cat_filter: dto.CatFilter, partial_update: dto.PartialUpdateCat
-) -> Optional[dto.Cat]:
-    pass
+) -> Optional[dto.CatOut]:
+    collection = await get_collection(_COLLECTION_NAME)
+    match = {"_id": ObjectId(cat_filter.cat_id)}
+    updated_cat = collection.find_one_and_update(
+        match,
+        {"$set": {**partial_cat_to_bson(partial_update)}},
+        upsert=True,
+        return_document=ReturnDocument.AFTER,
+    )
+    if not updated_cat:
+        return None
+    return await find_one(cat_filter)
+
+
+def partial_cat_to_bson(cat: dto.PartialUpdateCat) -> BSONDocument:
+    return cat.dict(exclude_unset=True)
