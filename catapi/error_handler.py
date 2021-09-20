@@ -39,6 +39,7 @@ async def exception_handler(request: Optional[Request], exc: Exception) -> JSONR
     exception_to_http_error_mapping: Mapping[Type[Exception], int] = {
         catapi.exceptions.EntityNotFoundError: status.HTTP_404_NOT_FOUND,
         catapi.exceptions.DuplicateEntityError: status.HTTP_409_CONFLICT,
+        catapi.exceptions.CatNotFoundError: status.HTTP_404_NOT_FOUND,
     }
 
     # We care for inheritance, so we need to check the error using isinstance(). A direct lookup

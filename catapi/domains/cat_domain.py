@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from catapi import dto
+from catapi import dto, exceptions
 from catapi.libs import dates
 from catapi.models import cat_model
 
@@ -13,7 +13,7 @@ async def create_cat(new_cat: dto.UnsavedCat) -> dto.Cat:
     return await cat_model.create_cat(new_cat, now=now)
 
 
-async def find_one(cat_filter: dto.CatFilter) -> Optional[dto.Cat]:
+async def find_one(cat_filter: dto.CatFilter) -> Optional[dto.CatOut]:
     return await cat_model.find_one(cat_filter=cat_filter)
 
 
@@ -28,3 +28,17 @@ async def find_many(
         page=page,
     )
     return results
+
+
+async def delete_cat(cat_id: dto.CatID) -> bool:
+    deleted = await cat_model.delete_cat(cat_id=cat_id)
+    if not deleted:
+        raise exceptions.CatNotFoundError(f"Cat {cat_id} does not exist.")
+    return deleted
+
+
+async def partial_update_cat(
+    cat_filter: dto.CatFilter, partial_update: dto.PartialUpdateCat
+) -> Optional[dto.CatOut]:
+    cat = await cat_model.partial_update_cat(cat_filter, partial_update)
+    return cat

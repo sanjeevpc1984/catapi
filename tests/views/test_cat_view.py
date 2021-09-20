@@ -1,11 +1,13 @@
 from datetime import datetime, timezone
+from http import HTTPStatus
 from typing import Optional
 from unittest import mock
 
 import pytest
 from starlette.testclient import TestClient
 
-from catapi import dto
+from catapi import dto, exceptions
+from catapi.events import cat_events
 from catapi.main import app
 
 client = TestClient(app)
@@ -38,9 +40,11 @@ UTC = timezone.utc
         ),
     ],
 )
+@mock.patch("fastapi.background.BackgroundTasks.add_task")
 @mock.patch("catapi.domains.cat_domain.create_cat")
 def test_create_cat_success(
     mock_cat_domain_create_cat: mock.Mock,
+    mock_background_tasks_add_task: mock.Mock,
     json_request_body: dto.JSON,
     expected_unsaved_cat: dto.Cat,
     expected_cat: dto.Cat,
@@ -52,6 +56,9 @@ def test_create_cat_success(
 
     assert (response.status_code, response.json()) == (201, expected_response)
     mock_cat_domain_create_cat.assert_called_once_with(expected_unsaved_cat)
+    mock_background_tasks_add_task.assert_called_once_with(
+        cat_events.fire_cat_created, cat_id="000000000000000000000101"
+    )
 
 
 @pytest.mark.parametrize(
@@ -140,20 +147,27 @@ def test_get_cat_not_found(
                     dto.CatSummary(
                         id=dto.CatID("000000000000000000000101"),
                         name="Sammybridge Cat",
+                        url="https://placekitten.com/250/350",
                     ),
                     dto.CatSummary(
                         id=dto.CatID("000000000000000000000102"),
                         name="Shirasu Sleep Industries Cat",
+                        url="https://placekitten.com/200/300",
                     ),
                 ],
                 metadata=dto.PageMetadata(has_next_page=False),
             ),
             {
                 "results": [
-                    {"id": "000000000000000000000101", "name": "Sammybridge Cat"},
+                    {
+                        "id": "000000000000000000000101",
+                        "name": "Sammybridge Cat",
+                        "url": "https://placekitten.com/250/350",
+                    },
                     {
                         "id": "000000000000000000000102",
                         "name": "Shirasu Sleep Industries Cat",
+                        "url": "https://placekitten.com/200/300",
                     },
                 ],
                 "metadata": {"has_next_page": False},
@@ -169,13 +183,18 @@ def test_get_cat_not_found(
                     dto.CatSummary(
                         id=dto.CatID("000000000000000000000101"),
                         name="Sammybridge Cat",
+                        url="https://placekitten.com/250/350",
                     ),
                 ],
                 metadata=dto.PageMetadata(has_next_page=False),
             ),
             {
                 "results": [
-                    {"id": "000000000000000000000101", "name": "Sammybridge Cat"},
+                    {
+                        "id": "000000000000000000000101",
+                        "name": "Sammybridge Cat",
+                        "url": "https://placekitten.com/250/350",
+                    },
                 ],
                 "metadata": {"has_next_page": False},
             },
@@ -202,3 +221,31 @@ def test_list_cats(
         cat_sort_params=expected_cat_sort_params,
         page=expected_page,
     )
+
+
+@mock.patch("catapi.domains.cat_domain.delete_cat")
+def test_delete_cat(mock_cat_domain_delete_cat: mock.Mock) -> None:
+    cat_id = dto.CatID("000000000000000000000101")
+    mock_cat_domain_delete_cat.return_value = True
+
+    response = client.delete(f"/v1/cats/{cat_id}")
+
+    assert response.status_code == HTTPStatus.NO_CONTENT
+
+    mock_cat_domain_delete_cat.assert_called_once_with(cat_id=cat_id)
+
+
+@mock.patch("catapi.domains.cat_domain.delete_cat")
+def test_delete_cat_not_found(mock_cat_domain_delete_cat: mock.Mock) -> None:
+    cat_id = dto.CatID("000000000000000000000101")
+    mock_cat_domain_delete_cat.side_effect = exceptions.CatNotFoundError(
+        f"Cat {cat_id} does not exist."
+    )
+
+    response = client.delete(f"/v1/cats/{cat_id}")
+
+    assert (response.status_code, response.json()) == (
+        404,
+        {"errors": f"Cat {cat_id} does not exist."},
+    )
+    mock_cat_domain_delete_cat.assert_called_once_with(cat_id=cat_id)

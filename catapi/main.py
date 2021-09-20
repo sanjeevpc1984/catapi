@@ -9,6 +9,7 @@ from ai_event_pubsub.healthcheck import run_healthcheck
 from elasticapm.contrib.starlette import ElasticAPM, make_apm_client  # type: ignore
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 from sentry_sdk.integrations.logging import LoggingIntegration
@@ -87,6 +88,23 @@ def add_middlewares(app: FastAPI) -> None:
         if response.headers.get("content-type") == "application/json":
             response.headers["content-type"] = "application/json; charset=utf-8"
         return response
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex="|".join(config.ALLOWED_ORIGINS_REGEXPES),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=[
+            "Content-Type",
+            "Date",
+            "Content-Length",
+            "Authorization",
+            "X-Request-ID",
+            "X-Correlation-ID",
+        ],
+        max_age=1728000,
+    )
 
 
 init_logging()

@@ -1,9 +1,11 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path, Response, status
 
 from catapi import dto, serializers
 from catapi.domains import cat_domain
+from catapi.events import cat_events
+from catapi.exceptions import InvalidCatError
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -14,7 +16,10 @@ logger = logging.getLogger(__name__)
     response_model=dto.Cat,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_cat(unsaved_cat: dto.UnsavedCat) -> dto.JSON:
+async def create_cat(
+    unsaved_cat: dto.UnsavedCat,
+    background_tasks: BackgroundTasks,
+) -> dto.JSON:
     """
     Create view for creating a new Cat given an UnsavedCat payload.
 
@@ -22,10 +27,11 @@ async def create_cat(unsaved_cat: dto.UnsavedCat) -> dto.JSON:
     :return:
     """
     cat = await cat_domain.create_cat(unsaved_cat)
+    background_tasks.add_task(cat_events.fire_cat_created, cat_id=cat.dict().get("id"))
     return cat.dict()
 
 
-@router.get("/cats/{cat_id}", response_model=dto.Cat, response_model_exclude_unset=True)
+@router.get("/cats/{cat_id}", response_model=dto.CatOut, response_model_exclude_unset=True)
 async def get_cat(
     cat_id: dto.CatID = Path(..., title="Cat ID", description="The ID of the Cat to get."),
     scope: dto.Scope = Depends(serializers.scope_from_query_param),
@@ -79,3 +85,36 @@ async def list_cats(
     return dto.ListResponse[dto.CatSummary](
         results=cat_summary_list_response, metadata=cats.metadata
     )
+
+
+@router.delete(
+    "/cats/{cat_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "model": dto.ErrorResponse,
+            "description": "Cat not found.",
+        },
+        status.HTTP_412_PRECONDITION_FAILED: {
+            "model": dto.ErrorResponse,
+            "description": "Cat with invalid id.",
+        },
+    },
+    response_model_exclude_unset=True,
+)
+async def delete_cat(
+    cat_id: dto.CatID = Path(..., title="Cat ID", description="The ID of the Cat to get.")
+) -> Response:
+    """
+    Delete view for Cat
+    \f
+
+    :return: The message and exception of the success and failure
+    """
+    try:
+        await cat_domain.delete_cat(cat_id=cat_id)
+    except (InvalidCatError) as ex:
+        raise HTTPException(
+            status_code=status.HTTP_412_PRECONDITION_FAILED, detail=str(ex)
+        ) from ex
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

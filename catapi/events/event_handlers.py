@@ -1,7 +1,10 @@
+import asyncio
 import logging
+import random
 from typing import Callable, Mapping
 
 from catapi import dto
+from catapi.domains import cat_domain
 from catapi.exceptions import EventException
 
 logger = logging.getLogger(__name__)
@@ -37,6 +40,14 @@ def handle_cat_created(data: dto.JSON) -> None:
 
     logger.info(f"[{event_id}] Cat {cat_id} has been created")
     # TODO: Handle the async postprocessing of a created Cat here.
+    width = random.randint(100, 200)
+    height = random.randint(200, 300)
+    cat_filter = dto.CatFilter(cat_id=cat_id)
+    cat_partial_update = dto.PartialUpdateCat(url=f"https://placekitten.com/{width}/{height}")
+    loop = asyncio.get_event_loop()
+    coroutine = cat_domain.partial_update_cat(cat_filter, cat_partial_update)
+    loop.run_until_complete(coroutine)
+    logger.info("[%s] cat %s has been updated", data.get("event_id"), data["cat_id"])
 
 
 EVENT_HANDLERS: Mapping[str, Callable] = {

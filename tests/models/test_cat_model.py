@@ -6,7 +6,7 @@ import pytest
 from bson import ObjectId
 
 from catapi import dto
-from catapi.exceptions import DuplicateCatError
+from catapi.exceptions import DuplicateCatError, InvalidCatError
 from catapi.models import cat_model
 from catapi.models.common import BSONDocument, get_collection
 from tests import conftest
@@ -20,6 +20,24 @@ async def remove_cats() -> None:
     logger.warning("removing all Cats")
     cats = await get_collection(cat_model._COLLECTION_NAME)
     await cats.delete_many({})
+
+
+@pytest.fixture
+def existing_cat_documents() -> List[BSONDocument]:
+    return [
+        {
+            "_id": ObjectId("000000000000000000000101"),
+            "name": "Sammybridge Cat",
+            "ctime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+            "mtime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+        },
+        {
+            "_id": ObjectId("000000000000000000000102"),
+            "name": "Shirasu Sleep Industries Cat",
+            "ctime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+            "mtime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+        },
+    ]
 
 
 @pytest.mark.parametrize(
@@ -115,22 +133,25 @@ async def test_create_cat_duplicate_name(
                     "name": "Sammybridge Cat",
                     "ctime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
                     "mtime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+                    "url": "https://placekitten.com/250/350",
                 },
                 {
                     "_id": ObjectId("000000000000000000000102"),
                     "name": "Shirasu Sleep Industries Cat",
                     "ctime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
                     "mtime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+                    "url": "https://placekitten.com/200/300",
                 },
             ],
             dto.CatFilter(
                 cat_id=dto.CatID("000000000000000000000101"),
             ),
-            dto.Cat(
+            dto.CatOut(
                 id=dto.CatID("000000000000000000000101"),
                 name="Sammybridge Cat",
                 ctime=datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
                 mtime=datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+                url="https://placekitten.com/250/350",
             ),
         ),
         (
@@ -140,6 +161,7 @@ async def test_create_cat_duplicate_name(
                     "name": "Sammybridge Cat",
                     "ctime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
                     "mtime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+                    "url": "https://placekitten.com/250/350",
                 },
                 {
                     "_id": ObjectId("000000000000000000000102"),
@@ -149,11 +171,12 @@ async def test_create_cat_duplicate_name(
                 },
             ],
             dto.CatFilter(name="Sammybridge Cat"),
-            dto.Cat(
+            dto.CatOut(
                 id=dto.CatID("000000000000000000000101"),
                 name="Sammybridge Cat",
                 ctime=datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
                 mtime=datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+                url="https://placekitten.com/250/350",
             ),
         ),
         (
@@ -169,6 +192,7 @@ async def test_create_cat_duplicate_name(
                     "name": "Shirasu Sleep Industries Cat",
                     "ctime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
                     "mtime": datetime(2020, 1, 1, 0, 0, tzinfo=UTC),
+                    "url": "https://placekitten.com/200/300",
                 },
             ],
             dto.CatFilter(
@@ -182,7 +206,7 @@ async def test_create_cat_duplicate_name(
 async def test_find_one(
     existing_cat_documents: List[BSONDocument],
     cat_filter: dto.CatFilter,
-    expected_cat: Optional[dto.Cat],
+    expected_cat: Optional[dto.CatOut],
 ) -> None:
     collection = await get_collection(cat_model._COLLECTION_NAME)
     await collection.insert_many(existing_cat_documents)
@@ -297,3 +321,44 @@ async def test_find_many(
     )
 
     assert found_cat_summaries == expected_cat_summaries
+
+
+@conftest.async_test
+async def test_delete_cat_successful(existing_cat_documents: List[BSONDocument]) -> None:
+    collection = await get_collection(cat_model._COLLECTION_NAME)
+    await collection.insert_many(existing_cat_documents)
+    cat_id = dto.CatID("000000000000000000000101")
+    deleted = await cat_model.delete_cat(cat_id=cat_id)
+
+    assert deleted is True
+    # assert it was actually deleted from db
+    found_cat = await cat_model.find_one(
+        cat_filter=dto.CatFilter(
+            cat_id=cat_id,
+        )
+    )
+
+    assert found_cat is None
+
+
+@conftest.async_test
+async def test_delete_cat_not_found(existing_cat_documents: List[BSONDocument]) -> None:
+    collection = await get_collection(cat_model._COLLECTION_NAME)
+    await collection.insert_many(existing_cat_documents)
+
+    cat_id = dto.CatID("000000000000000000000000")
+
+    deleted = await cat_model.delete_cat(cat_id=cat_id)
+
+    assert deleted is False
+
+
+@conftest.async_test
+async def test_delete_cat_invalid(existing_cat_documents: List[BSONDocument]) -> None:
+    collection = await get_collection(cat_model._COLLECTION_NAME)
+    await collection.insert_many(existing_cat_documents)
+    cat_id = dto.CatID("00000000000000000000010")
+
+    with pytest.raises(InvalidCatError) as invalid_cat_error:
+        await cat_model.delete_cat(cat_id)
+    assert str(invalid_cat_error.value) == ("Cat with invalid id 00000000000000000000010.")
